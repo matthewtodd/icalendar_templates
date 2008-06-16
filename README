@@ -1,0 +1,43 @@
+icalendar_templates
+-----------------------------------------------------------------------------
+
+Uses the icalendar gem to handles Rails view templates with an .icalendar extension.
+
+(For Rails 2.1: init.rb expresses gem dependency on icalendar.)
+
+
+Examples
+-----------------------------------------------------------------------------
+
+app/views/events/index.ics.icalendar:
+
+  cal.x_wr_calname 'My Events'
+  render :partial => @events, :locals => { :cal => cal } # partials work when you pass cal as a local variable
+
+app/views/events/_event.ics.icalendar:
+
+  # Need to figure this out: Since the event block uses instance_eval, we can't call event_url in there.
+  event_url = event_url(event)
+
+  cal.event do
+    summary     event.name
+    location    event.location
+    # icalendar doesn't display the date associated with a Time, so we have to call to_datetime
+    dtstart     event.starts_at.to_datetime, 'TZID' => event.starts_at.time_zone.tzinfo.identifier
+    dtend       event.ends_at.to_datetime,   'TZID' => event.ends_at.time_zone.tzinfo.identifier
+    url         event_url
+    description event.description
+
+    organizer   "mailto:#{event.organizer.email}", 'CN' => event.organizer.display_name
+
+    event.attendees.each do |attendee|
+      add_attendee "mailto:#{attendee.email}", 'CN' => attendee.display_name, 'PARTSTAT' => 'ACCEPTED'
+    end
+  end
+
+
+Known Issues
+-----------------------------------------------------------------------------
+
+- Layouts don't work.
+- Fragment caching isn't happening.
